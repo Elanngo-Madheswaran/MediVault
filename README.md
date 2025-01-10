@@ -40,6 +40,8 @@ MediVault is a cross-platform Point of Sale system designed for pharmacies and b
 
 ✔️ **Profit Report:** Tells you about the profit in each product and total profit.
 
+✔️ **Graphical Representation:** Shows the stats of the sales and profit in graphical form with pie chart and bar graph
+
 ✔️ **Improved UI** Enjoy a fresh, modern look with enhanced display quality, making the user experience more appealing.
 
 

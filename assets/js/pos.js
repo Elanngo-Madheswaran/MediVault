@@ -2118,8 +2118,12 @@ function loadSoldProducts() {
   let products = 0;
   let pieData = [];
   let pieChartHTML = "";
+  let barChartHTML = ""; // New variable for bar chart
 
   $("#product_sales").empty();
+
+  // Create a map to store the total quantity sold per product
+  let productSales = {};
 
   sold.forEach((item, index) => {
     items += parseInt(item.qty);
@@ -2133,6 +2137,12 @@ function loadSoldProducts() {
     tot_prof += productProfit;
 
     pieData.push({ product: item.product, profit: productProfit });
+
+    // Add to product sales data
+    if (!productSales[item.product]) {
+      productSales[item.product] = 0;
+    }
+    productSales[item.product] += parseInt(item.qty);
 
     counter++;
 
@@ -2155,8 +2165,6 @@ function loadSoldProducts() {
               moneyFormat(productProfit.toFixed(2))
             }</td>
             </tr>`;
-
-            
 
     if (counter == sold.length) {
       $("#total_items #counter").text(items);
@@ -2208,6 +2216,24 @@ function loadSoldProducts() {
             .join("")}
         </div>
       `);
+
+      // Generate Bar Chart
+      let maxQty = Math.max(...Object.values(productSales)); // Find the maximum quantity sold for scaling
+
+      for (let product in productSales) {
+        let quantity = productSales[product];
+        let barHeight = (quantity / maxQty) * 200; // Scaling the bar height
+        let color = `hsl(${barHeight * 360}, 70%, 60%)`; // Random color for each product
+
+        barChartHTML += `
+          <div style="display: flex; align-items: center; margin-bottom: 8px;">
+            <div style="width: ${barHeight}px; height: 20px; background-color: ${color};"></div>
+            <span style="margin-left: 8px;">${product}: ${quantity} items</span>
+          </div>`;
+      }
+
+      // Insert Bar Chart into DOM
+      $("#bar_chart").html(barChartHTML);
     }
   });
 }
