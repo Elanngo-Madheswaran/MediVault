@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <title></title>
     <link href="assets/dist/css/bundle.min.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="assets/css/mine.css">
 </head>
 
 <body>
@@ -107,6 +108,25 @@
                             <span id="counter">0</span>
                         </div>
                     </div>
+                    <div class="row text-center m-t-20" id="totals">
+                        <div id="total_profit" class="col-md-3 py-2 bg-success text-light">
+                            <h5>PROFIT</h5>
+                            <span id="counter" style="color: white;">0</span>
+                        </div>
+                        
+                    </div>
+                    <div id="chart_container">
+                        <div id="pie_chart_container">
+                          <h3>Profit Distribution (Pie Chart)</h3>
+                          <div id="pie_chart"></div>
+                        </div>
+                        <div id="bar_graph_container">
+                          <h3>Product Sales (Bar Chart)</h3>
+                          <div id="bar_graph"></div>
+                        </div>
+                      </div>
+                      
+                      
                     <div class="row p-t-10 p-b-10 bg-white m-t-10 m-b-20">
                         <h3 class="col-md-2">Transactions</h3>
                         <div class="col-md-2">
@@ -156,6 +176,7 @@
                                                 <th>Sold</th>
                                                 <th>Available</th>
                                                 <th>Sales</th>
+                                                <th>Profit</th>
                                             </tr>
                                         </thead>
                                         <tbody id="product_sales"></tbody>
@@ -522,6 +543,10 @@
                                 <input type="text" required="required" name="barcode" parsley-trigger="change" placeholder="Enter product barcode" class="form-control number-input" id="barcode">
                             </div>
                             <div class="form-group">
+                                <label for="cost">Cost</label>
+                                <input type="number" name="cost" placeholder="Cost" class="form-control" id="cost" min="0">
+                            </div>
+                            <div class="form-group">
                                 <label for="product_price">Price</label>
                                 <input type="text" required="required" name="price" placeholder="Price" class="form-control number-input" id="product_price">
                             </div>
@@ -539,6 +564,10 @@
                             </div>
                             <div class="form-group">
                                 <label><input type="checkbox" name="stock" id="stock"> Disable stock check </label>
+                            </div>
+                            <div class="form-group">
+                                <label for="batchno">Batch No</label>
+                                <input type="number" name="batchNo" placeholder="batchNo" class="form-control" id="batchNo" min="1">
                             </div>
                             <div class="form-group">
                                 <label for="imagename"><span id="rmv_img" class="btn btn-xs btn-warning">Remove</span>
@@ -592,6 +621,7 @@
                                     <th>Stock</th>
                                     <th>Expiry Date</th>
                                     <th>Category</th>
+                                    <th>Batch No</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>

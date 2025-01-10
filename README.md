@@ -38,6 +38,8 @@ MediVault is a cross-platform Point of Sale system designed for pharmacies and b
 
 ✔️ **Expiry Date Alerts:** Stay informed about product expiration dates, reducing waste and potential liabilities.
 
+✔️ **Profit Report:** Tells you about the profit in each product and total profit.
+
 ✔️ **Improved UI** Enjoy a fresh, modern look with enhanced display quality, making the user experience more appealing.
 
 

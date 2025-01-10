@@ -497,6 +497,8 @@ if (auth == undefined) {
         sku: data.sku,
         price: data.price,
         quantity: 1,
+        batchNo: data.batchNo,
+        profit: data.profit,
       };
 
       if ($(this).isExist(item)) {
@@ -705,11 +707,12 @@ if (auth == undefined) {
       let payment = 0;
       paymentType = $('.list-group-item.active').data('payment-type');
       cart.forEach((item) => {
-    items += `<tr><td>${DOMPurify.sanitize(item.product_name)}</td><td>${
-      DOMPurify.sanitize(item.quantity)
-    } </td><td class="text-right"> ${DOMPurify.sanitize(validator.unescape(settings.symbol))} ${moneyFormat(
-      DOMPurify.sanitize(Math.abs(item.price).toFixed(2)),
-    )} </td></tr>`;
+    items += `<tr>
+    <td>${DOMPurify.sanitize(item.product_name)}</td>
+    <td>${DOMPurify.sanitize(item.quantity)}</td>
+    <td>${DOMPurify.sanitize(item.batchNo)}</td>
+    <td class="text-right"> ${DOMPurify.sanitize(validator.unescape(settings.symbol))} ${moneyFormat(DOMPurify.sanitize(Math.abs(item.price).toFixed(2)),)} </td>
+    </tr>`;
 });
 
       let currentTime = new Date(moment());
@@ -824,6 +827,7 @@ if (auth == undefined) {
             <tr>
                 <th>Item</th>
                 <th>Qty</th>
+                <th>Batch No</th>
                 <th class="text-right">Price</th>
             </tr>
             </thead>
@@ -1620,6 +1624,7 @@ if (auth == undefined) {
             </td>
             <td>${product.expirationDate}</td>
             <td>${category.length > 0 ? category[0].name : ""}</td>
+            <td>${product.batchNo}</td>
             <td class="nobr"><span class="btn-group"><button onClick="$(this).editProduct(${index})" class="btn btn-warning btn-sm"><i class="fa fa-edit"></i></button><button onClick="$(this).deleteProduct(${
               product._id
             })" class="btn btn-danger btn-sm"><i class="fa fa-trash"></i></button></span></td></tr>`;
@@ -1949,6 +1954,7 @@ $.fn.print = function () {
   printJS({ printable: receipt, type: "raw-html" });
 };
 
+let tot_prof = 0;
 function loadTransactions() {
   let tills = [];
   let users = [];
@@ -2028,13 +2034,16 @@ function loadTransactions() {
           $("#total_sales #counter").text(
             validator.unescape(settings.symbol) + moneyFormat(parseFloat(sales).toFixed(2)),
           );
+          $("#total_profit #counter").text(
+            validator.unescape(settings.symbol) + moneyFormat(tot_prof),
+          );
           $("#total_transactions #counter").text(transact);
 
           const result = {};
 
-          for (const { product_name, price, quantity, id } of sold_items) {
+          for (const { product_name, price, quantity, id , batchNo , profit } of sold_items) {
             if (!result[product_name]) result[product_name] = [];
-            result[product_name].push({ id, price, quantity });
+            result[product_name].push({ id, price, quantity , batchNo , profit });
           }
 
           for (item in result) {
@@ -2046,6 +2055,8 @@ function loadTransactions() {
               id = i.id;
               price = i.price;
               quantity = quantity + parseInt(i.quantity);
+              batchNo = i.batchNo;
+              profit = i.profit;
             });
 
             sold.push({
@@ -2053,6 +2064,8 @@ function loadTransactions() {
               product: item,
               qty: quantity,
               price: price,
+              batchNo: batchNo,
+              profit: profit,
             });
           }
 
@@ -2098,20 +2111,28 @@ function sortDesc(a, b) {
 
 function loadSoldProducts() {
   sold.sort(sortDesc);
-
+  tot_prof = 0;
   let counter = 0;
   let sold_list = "";
   let items = 0;
   let products = 0;
+  let pieData = [];
+  let pieChartHTML = "";
+
   $("#product_sales").empty();
 
   sold.forEach((item, index) => {
-    items = items + parseInt(item.qty);
+    items += parseInt(item.qty);
     products++;
 
     let product = allProducts.filter(function (selected) {
       return selected._id == item.id;
     });
+
+    let productProfit = item.qty * item.profit;
+    tot_prof += productProfit;
+
+    pieData.push({ product: item.product, profit: productProfit });
 
     counter++;
 
@@ -2129,15 +2150,68 @@ function loadSoldProducts() {
               validator.unescape(settings.symbol) +
               moneyFormat((item.qty * parseFloat(item.price)).toFixed(2))
             }</td>
+            <td>${
+              validator.unescape(settings.symbol) +
+              moneyFormat(productProfit.toFixed(2))
+            }</td>
             </tr>`;
+
+            
 
     if (counter == sold.length) {
       $("#total_items #counter").text(items);
       $("#total_products #counter").text(products);
+      $("#total_profit #counter").text(
+        validator.unescape(settings.symbol) + moneyFormat(tot_prof)
+      );
       $("#product_sales").html(sold_list);
+
+      // Generate Pie Chart
+      let cumulativePercent = 0;
+      pieData.forEach((data, index) => {
+        let percentage = (data.profit / tot_prof) * 100;
+        let startAngle = cumulativePercent * 3.6; // convert to degrees
+        cumulativePercent += percentage;
+        let endAngle = cumulativePercent * 3.6; // convert to degrees
+
+        // Generate an SVG path for the slice
+        const x1 = Math.cos((Math.PI / 180) * startAngle);
+        const y1 = Math.sin((Math.PI / 180) * startAngle);
+        const x2 = Math.cos((Math.PI / 180) * endAngle);
+        const y2 = Math.sin((Math.PI / 180) * endAngle);
+
+        const largeArcFlag = percentage > 50 ? 1 : 0;
+
+        pieChartHTML += `
+          <path d="M 0 0 L ${x1} ${y1} A 1 1 0 ${largeArcFlag} 1 ${x2} ${y2} Z"
+            fill="hsl(${index * (360 / pieData.length)}, 70%, 60%)"
+            data-label="${data.product} (${percentage.toFixed(2)}%)">
+          </path>`;
+      });
+
+      // Insert Pie Chart into DOM
+      $("#pie_chart").html(`
+        <svg viewBox="-1 -1 2 2" style="transform: rotate(-90deg); width: 300px; height: 300px;">
+          ${pieChartHTML}
+        </svg>
+        <div id="legend">
+          ${pieData
+            .map(
+              (data, index) =>
+                `<div style="display: flex; align-items: center;">
+                  <span style="width: 20px; height: 20px; background-color: hsl(${
+                    index * (360 / pieData.length)
+                  }, 70%, 60%); display: inline-block; margin-right: 8px;"></span>
+                  ${data.product}: ${(data.profit / tot_prof * 100).toFixed(2)}%
+                </div>`
+            )
+            .join("")}
+        </div>
+      `);
     }
   });
 }
+
 
 function userFilter(users) {
   $("#users").empty();

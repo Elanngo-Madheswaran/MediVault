@@ -161,6 +161,7 @@ app.post("/product", function (req, res) {
         _id: parseInt(validator.escape(req.body.id)),
         barcode: parseInt(validator.escape(req.body.barcode)),
         expirationDate: validator.escape(req.body.expirationDate),
+        cost: validator.escape(req.body.cost),
         price: validator.escape(req.body.price),
         category: validator.escape(req.body.category),
         quantity:
@@ -170,6 +171,8 @@ app.post("/product", function (req, res) {
         name: validator.escape(req.body.name),
         stock: req.body.stock === "on" ? 0 : 1,
         minStock: validator.escape(req.body.minStock),
+        batchNo: validator.escape(req.body.batchNo),
+        profit: (validator.escape(req.body.price) - validator.escape(req.body.cost)),
         img: image,
     };
 
