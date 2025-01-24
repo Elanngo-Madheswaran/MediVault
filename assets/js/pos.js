@@ -2109,134 +2109,189 @@ function sortDesc(a, b) {
   return 0;
 }
 
+
 function loadSoldProducts() {
   sold.sort(sortDesc);
-  tot_prof = 0;
-  let counter = 0;
+  let tot_prof = 0;
   let sold_list = "";
   let items = 0;
   let products = 0;
-  let pieData = [];
   let pieChartHTML = "";
-  let barChartHTML = ""; // New variable for bar chart
+  let barChartHTML = "";
 
+  let productSales = {}; // Product-wise sales
+  let productProfits = {}; // Product-wise profits
+  let categorySales = {}; // Category-wise sales
+  let lowStockProducts = []; // Low stock products
+  let pieData = []; // Data for profit pie chart
+
+  // Clear previous data
   $("#product_sales").empty();
+  $("#pie_chart").empty();
+  $("#bar_chart").empty();
+  $("#product_sales_chart").empty();
+  $("#product_profit_chart").empty();
+  $("#category_sales_chart").empty();
+  $("#top_selling_chart").empty();
+  $("#low_stock_alerts").empty();
 
-  // Create a map to store the total quantity sold per product
-  let productSales = {};
+  // Create a mapping of category IDs to names
+  let categoryMap = {};
+  allCategories.forEach(category => {
+    categoryMap[category._id] = category.name; // Map category ID to name
+  });
 
-  sold.forEach((item, index) => {
+  // Process sold data
+  sold.forEach((item) => {
     items += parseInt(item.qty);
     products++;
 
-    let product = allProducts.filter(function (selected) {
-      return selected._id == item.id;
-    });
+    // Find product details
+    let product = allProducts.find((p) => p._id === item.id);
+    if (product) {
+      // Accumulate product sales and profit
+      productSales[item.product] = (productSales[item.product] || 0) + parseInt(item.qty);
+      productProfits[item.product] = (productProfits[item.product] || 0) + item.qty * item.profit;
+      tot_prof += item.qty * item.profit;
 
-    let productProfit = item.qty * item.profit;
-    tot_prof += productProfit;
+      // Add to pie chart data
+      pieData.push({ product: item.product, profit: item.qty * item.profit });
 
-    pieData.push({ product: item.product, profit: productProfit });
-
-    // Add to product sales data
-    if (!productSales[item.product]) {
-      productSales[item.product] = 0;
-    }
-    productSales[item.product] += parseInt(item.qty);
-
-    counter++;
-
-    sold_list += `<tr>
-            <td>${item.product}</td>
-            <td>${item.qty}</td>
-            <td>${
-              product[0].stock == 1
-                ? product.length > 0
-                  ? product[0].quantity
-                  : ""
-                : "N/A"
-            }</td>
-            <td>${
-              validator.unescape(settings.symbol) +
-              moneyFormat((item.qty * parseFloat(item.price)).toFixed(2))
-            }</td>
-            <td>${
-              validator.unescape(settings.symbol) +
-              moneyFormat(productProfit.toFixed(2))
-            }</td>
-            </tr>`;
-
-    if (counter == sold.length) {
-      $("#total_items #counter").text(items);
-      $("#total_products #counter").text(products);
-      $("#total_profit #counter").text(
-        validator.unescape(settings.symbol) + moneyFormat(tot_prof)
-      );
-      $("#product_sales").html(sold_list);
-
-      // Generate Pie Chart
-      let cumulativePercent = 0;
-      pieData.forEach((data, index) => {
-        let percentage = (data.profit / tot_prof) * 100;
-        let startAngle = cumulativePercent * 3.6; // convert to degrees
-        cumulativePercent += percentage;
-        let endAngle = cumulativePercent * 3.6; // convert to degrees
-
-        // Generate an SVG path for the slice
-        const x1 = Math.cos((Math.PI / 180) * startAngle);
-        const y1 = Math.sin((Math.PI / 180) * startAngle);
-        const x2 = Math.cos((Math.PI / 180) * endAngle);
-        const y2 = Math.sin((Math.PI / 180) * endAngle);
-
-        const largeArcFlag = percentage > 50 ? 1 : 0;
-
-        pieChartHTML += `
-          <path d="M 0 0 L ${x1} ${y1} A 1 1 0 ${largeArcFlag} 1 ${x2} ${y2} Z"
-            fill="hsl(${index * (360 / pieData.length)}, 70%, 60%)"
-            data-label="${data.product} (${percentage.toFixed(2)}%)">
-          </path>`;
-      });
-
-      // Insert Pie Chart into DOM
-      $("#pie_chart").html(`
-        <svg viewBox="-1 -1 2 2" style="transform: rotate(-90deg); width: 300px; height: 300px;">
-          ${pieChartHTML}
-        </svg>
-        <div id="legend">
-          ${pieData
-            .map(
-              (data, index) =>
-                `<div style="display: flex; align-items: center;">
-                  <span style="width: 20px; height: 20px; background-color: hsl(${
-                    index * (360 / pieData.length)
-                  }, 70%, 60%); display: inline-block; margin-right: 8px;"></span>
-                  ${data.product}: ${(data.profit / tot_prof * 100).toFixed(2)}%
-                </div>`
-            )
-            .join("")}
-        </div>
-      `);
-
-      // Generate Bar Chart
-      let maxQty = Math.max(...Object.values(productSales)); // Find the maximum quantity sold for scaling
-
-      for (let product in productSales) {
-        let quantity = productSales[product];
-        let barHeight = (quantity / maxQty) * 200; // Scaling the bar height
-        let color = `hsl(${barHeight * 360}, 70%, 60%)`; // Random color for each product
-
-        barChartHTML += `
-          <div style="display: flex; align-items: center; margin-bottom: 8px;">
-            <div style="width: ${barHeight}px; height: 20px; background-color: ${color};"></div>
-            <span style="margin-left: 8px;">${product}: ${quantity} items</span>
-          </div>`;
+      // Accumulate category-wise sales and profit
+      const category = product.category;
+      if (!categorySales[category]) {
+        categorySales[category] = { qty: 0, profit: 0 };
       }
+      categorySales[category].qty += parseInt(item.qty);
+      categorySales[category].profit += item.qty * item.profit;
 
-      // Insert Bar Chart into DOM
-      $("#bar_chart").html(barChartHTML);
+      // Check for low stock products
+      if (product.stock === 1 && product.quantity <= product.minStock) {
+        lowStockProducts.push({
+          name: product.name,
+          quantity: product.quantity,
+          minStock: product.minStock,
+        });
+      }
     }
+
+    // Build sales table
+    sold_list += `<tr>
+        <td>${item.product}</td>
+        <td>${item.qty}</td>
+        <td>${product?.stock === 1 ? product.quantity : "N/A"}</td>
+        <td>${moneyFormat((item.qty * item.price).toFixed(2))}</td>
+        <td>${moneyFormat((item.qty * item.profit).toFixed(2))}</td>
+      </tr>`;
   });
+
+  // Update the sales table in the DOM
+  $("#product_sales").html(sold_list);
+
+  // Generate Pie Chart
+  let cumulativePercent = 0;
+  pieData.forEach((data, index) => {
+    let percentage = (data.profit / tot_prof) * 100;
+    let startAngle = cumulativePercent * 3.6; // Convert to degrees
+    cumulativePercent += percentage;
+    let endAngle = cumulativePercent * 3.6;
+
+    // Generate SVG path for the pie slice
+    const x1 = Math.cos((Math.PI / 180) * startAngle);
+    const y1 = Math.sin((Math.PI / 180) * startAngle);
+    const x2 = Math.cos((Math.PI / 180) * endAngle);
+    const y2 = Math.sin((Math.PI / 180) * endAngle);
+
+    const largeArcFlag = percentage > 50 ? 1 : 0;
+
+    pieChartHTML += `
+      <path d="M 0 0 L ${x1} ${y1} A 1 1 0 ${largeArcFlag} 1 ${x2} ${y2} Z"
+        fill="hsl(${index * (360 / pieData.length)}, 70%, 60%)"
+        data-label="${data.product} (${percentage.toFixed(2)}%)">
+      </path>`;
+  });
+
+  // Insert Pie Chart into the DOM with Title
+  $("#pie_chart").html(`<h2>Item-wise Profit Percentage</h2>
+    <svg viewBox="-1 -1 2 2" style="transform: rotate(-90deg); width: 300px; height: 300px;">
+      ${pieChartHTML}
+    </svg>
+    <div id="legend">
+      ${pieData
+        .map(
+          (data, index) =>
+            `<div style="display: flex; align-items: center;">
+              <span style="width: 20px; height: 20px; background-color: hsl(${
+                index * (360 / pieData.length)
+              }, 70%, 60%); display: inline-block; margin-right: 8px;"></span>
+              ${data.product}: ${(data.profit / tot_prof * 100).toFixed(2)}%
+            </div>`
+        )
+        .join("")}
+    </div>
+  `);
+
+  // Generate Bar Chart
+  let maxQty = Math.max(...Object.values(productSales)); // Find the maximum quantity sold for scaling
+  for (let product in productSales) {
+    let quantity = productSales[product];
+    let barHeight = (quantity / maxQty) * 200; // Scale the bar height
+    let color = `hsl(${(quantity / maxQty) * 360}, 70%, 60%)`; // Generate color for each product
+
+    barChartHTML += `
+      <div style="display: flex; align-items: center; margin-bottom: 8px;">
+        <div style="width: ${barHeight}px; height: 20px; background-color: ${color};"></div>
+        <span style="margin-left: 8px;">${product}: ${quantity} items</span>
+      </div>`;
+  }
+
+  // Insert Bar Chart into the DOM with Title
+  $("#bar_chart").html(`<h2>Product Sales</h2>${barChartHTML}`);
+
+  // Update totals
+  $("#total_items #counter").text(items);
+  $("#total_products #counter").text(products);
+  $("#total_profit #counter").text(moneyFormat(tot_prof));
+
+  // Render Category-Wise Sales (Vertical Bar Chart) with Title
+  let categorySalesHTML = "";
+  Object.entries(categorySales).forEach(([categoryId, { qty }]) => {
+    const categoryName = categoryMap[categoryId] || "Unknown Category"; // Get the name from the map
+    categorySalesHTML += `
+      <div style="margin-bottom: 8px;">
+        <div style="height: ${qty * 10}px; width: 20px; background-color: #2196f3; display: inline-block;"></div>
+        <span style="margin-left: 8px;">${categoryName}: ${qty} units</span>
+      </div>`;
+  });
+  $("#category_sales_chart").html(`<h2>Category-Wise Sales</h2>${categorySalesHTML}`);
+
+  // Render Top-Selling Products (List with Percentage Bars) with Title
+  let topProducts = Object.entries(productSales)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+  let topSellingHTML = "";
+  topProducts.forEach(([product, qty]) => {
+    topSellingHTML += `
+      <div style="margin-bottom: 8px;">
+        <span>${product}: ${qty} units</span>
+        <div style="background-color: #ff9800; height: 10px; width: ${(qty / maxQty) * 100}%;"></div>
+      </div>`;
+  });
+  $("#top_selling_chart").html(`<h2>Top Selling Products</h2>${topSellingHTML}`);
+
+  // Render Low Stock Alerts (Text-Based List) with Title
+  let lowStockHTML = lowStockProducts.map(
+    (p) =>
+      `<div style="margin-bottom: 8px; color: red;">
+        <strong>${p.name}</strong> - ${p.quantity} units (Min: ${p.minStock})
+      </div>`
+  );
+  $("#low_stock_alerts").html(`<h2>Low Stock Alerts</h2>${lowStockHTML.join("")}`);
 }
+
+
+
+
 
 
 function userFilter(users) {
