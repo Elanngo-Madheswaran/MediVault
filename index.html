@@ -89,74 +89,63 @@
                 </div>
             </div>
             <div id="transactions_view">
-                <div class="container">
-                    <div class="row text-center m-t-20" id="totals">
-                        <div id="total_sales" class="col-md-3 py-2 bg-success">
+                <div class="container" style="width: 100%;">
+                    <div class="row text-center m-t-20" id="totals" style="display: flex; justify-content: space-between;">
+                        <div id="total_sales" class="py-2 bg-success" style="flex: 1; margin: 5px; padding: 10px; min-width: 150px;">
                             <h5>SALES</h5>
                             <span id="counter">0</span>
                         </div>
-                        <div id="total_transactions" class="col-md-3 py-2 bg-warning">
+                        <div id="total_transactions" class="py-2 bg-warning" style="flex: 1; margin: 5px; padding: 10px; min-width: 150px;">
                             <h5>TRANSACTIONS</h5>
                             <span id="counter">0</span>
                         </div>
-                        <div id="total_items" class="col-md-3 py-2 bg-info">
+                        <div id="total_items" class="py-2 bg-info" style="flex: 1; margin: 5px; padding: 10px; min-width: 150px;">
                             <h5>ITEMS SOLD</h5>
                             <span id="counter">0</span>
                         </div>
-                        <div id="total_products" class="col-md-3 py-2 bg-success">
+                        <div id="total_products" class="py-2 bg-success" style="flex: 1; margin: 5px; padding: 10px; min-width: 150px;">
                             <h5>PRODUCTS</h5>
                             <span id="counter">0</span>
                         </div>
-                    </div>
-                    <div class="row text-center m-t-20" id="totals">
-                        <div id="total_profit" class="col-md-3 py-2 bg-success text-light">
+                        <div id="total_profit" class="py-2 bg-success text-light" style="flex: 1; margin: 5px; padding: 10px; min-width: 150px;">
                             <h5>PROFIT</h5>
                             <span id="counter" style="color: white;">0</span>
                         </div>
-                        
                     </div>
-                    <div class="container">
-                        <h1>Sales Data Dashboard</h1>
-                      
-                        <div class="chart-container">
-                          <!-- Pie Chart -->
-                          <div class="chart-box" id="pie_chart">
-                            <h2>Profit Distribution</h2>
-                            <!-- Pie Chart will be dynamically inserted here -->
-                          </div>
-                      
-                          <!-- Bar Chart -->
-                          <div class="chart-box" id="bar_chart">
-                            <h2>Product Sales</h2>
-                            <!-- Bar Chart will be dynamically inserted here -->
-                          </div>
-                        </div>
-                      
-                        <div class="chart-container">
-                          <!-- Product-Wise Sales (Horizontal Bar Chart) -->
-                      
-                          <!-- Product-Wise Profit (Pie Chart) -->
-                          <div class="chart-box" id="product_profit_chart">
-                            <h2>Product-Wise Profit</h2>
-                            <!-- Product-Wise Profit Pie Chart will be dynamically inserted here -->
-                          </div>
-                        </div>
-                      
-                        <div class="chart-container">
-                          <!-- Category-Wise Sales (Vertical Bar Chart) -->
-                          <div class="chart-box" id="category_sales_chart">
-                            <h2>Category-Wise Sales</h2>
-                            <!-- Category-Wise Sales will be dynamically inserted here -->
-                          </div>
-                      
-                          <!-- Top Selling Products -->
-                          <div class="chart-box" id="top_selling_chart">
-                            <h2>Top Selling Products</h2>
-                            <!-- Top Selling Products List will be dynamically inserted here -->
-                          </div>
-                        </div>
-                      
+                </div>
+                
+                <div class="container" style="width: 100%; margin-top: 20px;">
+                    <h1 style="text-align: center;">Sales Data Dashboard</h1>
+                  
+                    <!-- All Charts in a Single Line -->
+                    <div class="chart-container" style="display: flex; justify-content: space-between; flex-wrap: wrap; margin-top: 20px;">
+                      <!-- Pie Chart -->
+                      <div class="chart-box" id="pie_chart" style="flex: 1; margin: 10px; padding: 10px; min-width: 300px; height: 300px; border: 1px solid #ccc; border-radius: 5px;">
+                        <h2 style="text-align: center;">Profit Distribution</h2>
+                        <!-- Pie Chart will be dynamically inserted here -->
                       </div>
+                  
+                      <!-- Bar Chart -->
+                      <div class="chart-box" id="bar_chart" style="flex: 1; margin: 10px; padding: 10px; min-width: 300px; height: 300px; border: 1px solid #ccc; border-radius: 5px;">
+                        <h2 style="text-align: center;">Product Sales</h2>
+                        <!-- Bar Chart will be dynamically inserted here -->
+                      </div>
+                  
+                      <!-- Category-Wise Sales -->
+                      <div class="chart-box" id="category_sales_chart" style="flex: 1; margin: 10px; padding: 10px; min-width: 300px; height: 300px; border: 1px solid #ccc; border-radius: 5px;">
+                        <h2 style="text-align: center;">Category-Wise Sales</h2>
+                        <!-- Category-Wise Sales will be dynamically inserted here -->
+                      </div>
+                  
+                      <!-- Top Selling Products -->
+                      <div class="chart-box" id="top_selling_chart" style="flex: 1; margin: 10px; padding: 10px; min-width: 300px; height: 300px; border: 1px solid #ccc; border-radius: 5px;">
+                        <h2 style="text-align: center;">Top Selling Products</h2>
+                        <!-- Top Selling Products List will be dynamically inserted here -->
+                      </div>
+                    </div>
+                  </div>
+                  
+                
                       
 
 

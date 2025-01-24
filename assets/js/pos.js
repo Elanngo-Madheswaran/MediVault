@@ -2118,26 +2118,24 @@ function loadSoldProducts() {
   let products = 0;
   let pieChartHTML = "";
   let barChartHTML = "";
+  let legendHTML = "";
 
   let productSales = {}; // Product-wise sales
   let productProfits = {}; // Product-wise profits
   let categorySales = {}; // Category-wise sales
-  let lowStockProducts = []; // Low stock products
   let pieData = []; // Data for profit pie chart
 
   // Clear previous data
   $("#product_sales").empty();
   $("#pie_chart").empty();
   $("#bar_chart").empty();
-  $("#product_sales_chart").empty();
   $("#product_profit_chart").empty();
   $("#category_sales_chart").empty();
   $("#top_selling_chart").empty();
-  $("#low_stock_alerts").empty();
 
   // Create a mapping of category IDs to names
   let categoryMap = {};
-  allCategories.forEach(category => {
+  allCategories.forEach((category) => {
     categoryMap[category._id] = category.name; // Map category ID to name
   });
 
@@ -2149,33 +2147,20 @@ function loadSoldProducts() {
     // Find product details
     let product = allProducts.find((p) => p._id === item.id);
     if (product) {
-      // Accumulate product sales and profit
       productSales[item.product] = (productSales[item.product] || 0) + parseInt(item.qty);
       productProfits[item.product] = (productProfits[item.product] || 0) + item.qty * item.profit;
       tot_prof += item.qty * item.profit;
 
-      // Add to pie chart data
       pieData.push({ product: item.product, profit: item.qty * item.profit });
 
-      // Accumulate category-wise sales and profit
       const category = product.category;
       if (!categorySales[category]) {
         categorySales[category] = { qty: 0, profit: 0 };
       }
       categorySales[category].qty += parseInt(item.qty);
       categorySales[category].profit += item.qty * item.profit;
-
-      // Check for low stock products
-      if (product.stock === 1 && product.quantity <= product.minStock) {
-        lowStockProducts.push({
-          name: product.name,
-          quantity: product.quantity,
-          minStock: product.minStock,
-        });
-      }
     }
 
-    // Build sales table
     sold_list += `<tr>
         <td>${item.product}</td>
         <td>${item.qty}</td>
@@ -2196,7 +2181,6 @@ function loadSoldProducts() {
     cumulativePercent += percentage;
     let endAngle = cumulativePercent * 3.6;
 
-    // Generate SVG path for the pie slice
     const x1 = Math.cos((Math.PI / 180) * startAngle);
     const y1 = Math.sin((Math.PI / 180) * startAngle);
     const x2 = Math.cos((Math.PI / 180) * endAngle);
@@ -2209,25 +2193,25 @@ function loadSoldProducts() {
         fill="hsl(${index * (360 / pieData.length)}, 70%, 60%)"
         data-label="${data.product} (${percentage.toFixed(2)}%)">
       </path>`;
+
+    legendHTML += `
+      <div style="display: flex; align-items: center; margin-bottom: 4px; ">
+        <div style="width: 16px; height: 16px; background-color: hsl(${index * (360 / pieData.length)}, 70%, 60%); margin-right: 8px;"></div>
+        <span>${data.product}: ${percentage.toFixed(2)}%</span>
+      </div>`;
   });
 
-  // Insert Pie Chart into the DOM with Title
-  $("#pie_chart").html(`<h2>Item-wise Profit Percentage</h2>
-    <svg viewBox="-1 -1 2 2" style="transform: rotate(-90deg); width: 300px; height: 300px;">
+  // Insert Pie Chart and Legend into the DOM with title
+  $("#pie_chart").html(`
+    <h4>Profit Distribution (Pie Chart)</h4>
+    <div style="height: 90%;">
+
+    <svg viewBox="-1 -1 2 2" style="transform: rotate(-90deg); width: 100%; height: 60%;">
       ${pieChartHTML}
     </svg>
-    <div id="legend">
-      ${pieData
-        .map(
-          (data, index) =>
-            `<div style="display: flex; align-items: center;">
-              <span style="width: 20px; height: 20px; background-color: hsl(${
-                index * (360 / pieData.length)
-              }, 70%, 60%); display: inline-block; margin-right: 8px;"></span>
-              ${data.product}: ${(data.profit / tot_prof * 100).toFixed(2)}%
-            </div>`
-        )
-        .join("")}
+    <div>
+      ${legendHTML}
+    </div>
     </div>
   `);
 
@@ -2235,37 +2219,23 @@ function loadSoldProducts() {
   let maxQty = Math.max(...Object.values(productSales)); // Find the maximum quantity sold for scaling
   for (let product in productSales) {
     let quantity = productSales[product];
-    let barHeight = (quantity / maxQty) * 200; // Scale the bar height
+    let barHeight = (quantity / maxQty) * 100; // Scale the bar height (adjusted for max height 100px)
     let color = `hsl(${(quantity / maxQty) * 360}, 70%, 60%)`; // Generate color for each product
 
     barChartHTML += `
       <div style="display: flex; align-items: center; margin-bottom: 8px;">
-        <div style="width: ${barHeight}px; height: 20px; background-color: ${color};"></div>
+        <div style="width: ${barHeight}%; height: 20px; background-color: ${color};"></div>
         <span style="margin-left: 8px;">${product}: ${quantity} items</span>
       </div>`;
   }
 
-  // Insert Bar Chart into the DOM with Title
-  $("#bar_chart").html(`<h2>Product Sales</h2>${barChartHTML}`);
+  // Insert Bar Chart into the DOM with title
+  $("#bar_chart").html(`
+    <h4>Product Sales (Bar Chart)</h4>
+    ${barChartHTML}
+  `);
 
-  // Update totals
-  $("#total_items #counter").text(items);
-  $("#total_products #counter").text(products);
-  $("#total_profit #counter").text(moneyFormat(tot_prof));
-
-  // Render Category-Wise Sales (Vertical Bar Chart) with Title
-  let categorySalesHTML = "";
-  Object.entries(categorySales).forEach(([categoryId, { qty }]) => {
-    const categoryName = categoryMap[categoryId] || "Unknown Category"; // Get the name from the map
-    categorySalesHTML += `
-      <div style="margin-bottom: 8px;">
-        <div style="height: ${qty * 10}px; width: 20px; background-color: #2196f3; display: inline-block;"></div>
-        <span style="margin-left: 8px;">${categoryName}: ${qty} units</span>
-      </div>`;
-  });
-  $("#category_sales_chart").html(`<h2>Category-Wise Sales</h2>${categorySalesHTML}`);
-
-  // Render Top-Selling Products (List with Percentage Bars) with Title
+  // Render Top-Selling Products with title
   let topProducts = Object.entries(productSales)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5);
@@ -2277,17 +2247,30 @@ function loadSoldProducts() {
         <div style="background-color: #ff9800; height: 10px; width: ${(qty / maxQty) * 100}%;"></div>
       </div>`;
   });
-  $("#top_selling_chart").html(`<h2>Top Selling Products</h2>${topSellingHTML}`);
+  $("#top_selling_chart").html(`
+    <h4>Top-Selling Products</h4>
+    ${topSellingHTML}
+  `);
 
-  // Render Low Stock Alerts (Text-Based List) with Title
-  let lowStockHTML = lowStockProducts.map(
-    (p) =>
-      `<div style="margin-bottom: 8px; color: red;">
-        <strong>${p.name}</strong> - ${p.quantity} units (Min: ${p.minStock})
-      </div>`
-  );
-  $("#low_stock_alerts").html(`<h2>Low Stock Alerts</h2>${lowStockHTML.join("")}`);
+  // Render Category-Wise Sales with title
+  let categorySalesHTML = "<h4>Category-Wise Sales</h4>";
+  Object.entries(categorySales).forEach(([categoryId, { qty }]) => {
+    const categoryName = categoryMap[categoryId] || "Unknown Category";
+    categorySalesHTML += `<div style="padding:2px;">
+      <div>
+        <div style="height: ${qty}px; width: 20px; background-color: #2196f3; display: inline-block;"></div>
+        <span style="margin-left: 8px;">${categoryName}: ${qty} units</span>
+      </div>
+    </div>`;
+  });
+  $("#category_sales_chart").html(categorySalesHTML);
+
+  // Update totals
+  $("#total_items #counter").text(items);
+  $("#total_products #counter").text(products);
+  $("#total_profit #counter").text(moneyFormat(tot_prof));
 }
+
 
 
 
