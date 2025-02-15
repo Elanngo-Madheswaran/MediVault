@@ -68,6 +68,20 @@ let end_date = moment(end).toDate();
 let by_till = 0;
 let by_user = 0;
 let by_status = 1;
+// Add a function to periodically refresh critical data
+function setupPeriodicRefresh() {
+  // Refresh transactions every 30 seconds
+  setInterval(() => {
+    loadTransactions();
+    loadSoldProducts();
+  }, 30000);
+}
+
+// Call this when the app initializes
+$(document).ready(function() {
+  // Existing initialization code...
+  setupPeriodicRefresh();
+});
 const default_item_img = path.join("assets","images","default.jpg");
 const permissions = [
   "perm_products",
@@ -491,7 +505,7 @@ if (auth == undefined) {
     });
 
     $.fn.addProductToCart = function (data) {
-      item = {
+      const item = {
         id: data._id,
         product_name: data.name,
         sku: data.sku,
@@ -500,13 +514,13 @@ if (auth == undefined) {
         batchNo: data.batchNo,
         profit: data.profit,
       };
-
-      if ($(this).isExist(item)) {
-        $(this).qtIncrement(index);
-      } else {
-        cart.push(item);
-        $(this).renderTable(cart);
-      }
+    
+      this.isExist(item) ? this.qtIncrement(index) : this.addNewItemToCart(item);
+    };
+    
+    $.fn.addNewItemToCart = function (item) {
+      cart.push(item);
+      this.renderTable(cart);
     };
 
     $.fn.isExist = function (data) {
@@ -907,7 +921,8 @@ if (auth == undefined) {
         user_id: user._id,
       };
 
-      $.ajax({
+      $.ajax(
+        {
         url: api + "new",
         type: method,
         data: JSON.stringify(data),
@@ -917,9 +932,13 @@ if (auth == undefined) {
         success: function (data) {
           cart = [];
           receipt = DOMPurify.sanitize(receipt,{ ALLOW_UNKNOWN_PROTOCOLS: true });
+          loadTransactions(); // Update transaction list
+          loadSoldProducts(); // Update sold products      
           $("#viewTransaction").html("");
           $("#viewTransaction").html(receipt);
           $("#orderModal").modal("show");
+          loadTransactions();
+          loadSoldProducts();
           loadProducts();
           loadCustomers();
           $(".loading").hide();
@@ -2449,6 +2468,9 @@ $.fn.viewTransaction = function (index) {
 
         //prevent DOM XSS; allow windows paths in img src
         receipt = DOMPurify.sanitize(receipt,{ ALLOW_UNKNOWN_PROTOCOLS: true });
+        loadSoldProducts();
+        loadTransactions();
+        loadProducts();
 
   $("#viewTransaction").html("");
   $("#viewTransaction").html(receipt);
