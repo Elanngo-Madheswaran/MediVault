@@ -128,7 +128,7 @@ $(function () {
       timePickerSeconds: true,
       // minDate: '',
       ranges: {
-        Today: [moment().startOf("day"), moment()],
+        Today: [moment().startOf("day"), moment().endOf("day")],
         Yesterday: [
           moment().subtract(1, "days").startOf("day"),
           moment().subtract(1, "days").endOf("day"),
