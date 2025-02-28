@@ -77,6 +77,54 @@ function setupPeriodicRefresh() {
   }, 30000);
 }
 
+function processTransaction(status) {
+  let paymentType = $(".list-group-item.active").data("payment-type") || "Cash";
+  let orderNumber = holdOrder !== 0 ? holdOrder : Math.floor(Date.now() / 1000);
+  let method = holdOrder !== 0 ? "PUT" : "POST";
+  let customer = JSON.parse($("#customer").val());
+  
+  let transactionData = {
+      order: orderNumber,
+      ref_number: $("#refNumber").val(),
+      discount: $("#inputDiscount").val(),
+      customer: customer,
+      status: status,
+      subtotal: parseFloat(subTotal).toFixed(2),
+      tax: settings.charge_tax ? (subTotal * parseFloat(settings.percentage)) / 100 : 0,
+      order_type: 1,
+      items: [...cart], 
+      date: new Date(moment()),
+      payment_type: paymentType,
+      payment_info: $("#paymentInfo").val(),
+      total: settings.charge_tax ? (subTotal + totalVat).toFixed(2) : subTotal.toFixed(2),
+      paid: $("#payment").val() ? parseFloat($("#payment").val().replace(",", "")).toFixed(2) : "",
+      change: $("#change").text() ? parseFloat($("#change").text().replace(",", "")).toFixed(2) : "",
+      _id: orderNumber,
+      till: platform.till,
+      mac: platform.mac,
+      user: user.fullname,
+      user_id: user._id,
+  };
+
+  return transactionData;
+}
+
+function updateUIAfterTransaction() {
+  loadTransactions();
+  loadSoldProducts();
+  loadProducts();
+  loadCustomers();
+  getHoldOrders();
+  getCustomerOrders();
+  renderTable(cart);
+  
+  $(".loading").hide();
+  $("#dueModal").modal("hide");
+  $("#paymentModel").modal("hide");
+}
+
+
+
 $("#printReceipt").on("click", function () {
   let receiptContent = $("#viewTransaction").html(); // Get the bill content
 
@@ -805,87 +853,39 @@ if (auth == undefined) {
     }
 
     $.fn.submitDueOrder = function (status) {
-      let paymentType = $(".list-group-item.active").data("payment-type");
-      let currentTime = new Date(moment());
-      let discount = $("#inputDiscount").val();
-      let customer = JSON.parse($("#customer").val());
-      let date = moment(currentTime).format("YYYY-MM-DD HH:mm:ss");
-      let paymentAmount = $("#payment").val().replace(",", "");
-      let changeAmount = $("#change").text().replace(",", "");
-      let paid = $("#payment").val() === "" ? "" : parseFloat(paymentAmount).toFixed(2);
-      let change = $("#change").text() === "" ? "" : parseFloat(changeAmount).toFixed(2);
-      let refNumber = $("#refNumber").val();
-      let orderNumber = holdOrder !== 0 ? holdOrder : Math.floor(Date.now() / 1000);
-      let method = holdOrder !== 0 ? "PUT" : "POST";
-      let type = paymentType === 1 ? "Cash" : paymentType === 3 ? "Card" : "Unknown";
-      let tax_row = settings.charge_tax ? (totalVat = (subTotal * parseFloat(settings.percentage)) / 100) : 0;
-      let orderTotal = settings.charge_tax ? (subTotal + totalVat).toFixed(2) : subTotal.toFixed(2);
-  
-      let data = {
-          order: orderNumber,
-          ref_number: refNumber,
-          discount: discount,
-          customer: customer,
-          status: status,
-          subtotal: parseFloat(subTotal).toFixed(2),
-          tax: totalVat,
-          order_type: 1,
-          items: [...cart], // Copy cart items
-          date: currentTime,
-          payment_type: type,
-          payment_info: $("#paymentInfo").val(),
-          total: orderTotal,
-          paid: paid,
-          change: change,
-          _id: orderNumber,
-          till: platform.till,
-          mac: platform.mac,
-          user: user.fullname,
-          user_id: user._id,
-      };
-  
       $(".loading").show();
+  
+      let transactionData = processTransaction(status);
   
       $.ajax({
           url: api + "new",
-          type: method,
-          data: JSON.stringify(data),
+          type: transactionData._id === holdOrder ? "PUT" : "POST",
+          data: JSON.stringify(transactionData),
           contentType: "application/json; charset=utf-8",
           cache: false,
           processData: false,
           success: function (response) {
-              cart = [];
+              cart = []; // Clear cart after order submission
   
-              // Use generateBill function to generate the receipt
-              let receiptContent = generateBill(data);
-  
-              // Update UI and show receipt
-              loadTransactions();
-              loadSoldProducts();
+              let receiptContent = generateBill(transactionData);
               $("#viewTransaction").html(receiptContent);
               $("#orderModal").modal("show");
   
-              loadProducts();
-              loadCustomers();
-              $(".loading").hide();
-              $("#dueModal").modal("hide");
-              $("#paymentModel").modal("hide");
+              updateUIAfterTransaction(); // Refresh UI
   
-              getHoldOrders();
-              getCustomerOrders();
-              renderTable(cart);
+              $(".loading").hide();
           },
           error: function () {
               $(".loading").hide();
-              $("#dueModal").modal("toggle");
               notiflix.Report.failure("Something went wrong!", "Please refresh this page and try again", "Ok");
-          },
+          }
       });
   
       $("#refNumber").val("");
       $("#change").text("");
-      $("#payment,#paymentText").val("");
+      $("#payment, #paymentText").val("");
   };
+  
   
 
     $.get(api + "on-hold", function (data) {
