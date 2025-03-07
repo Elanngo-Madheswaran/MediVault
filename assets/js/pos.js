@@ -109,20 +109,6 @@ function processTransaction(status) {
   return transactionData;
 }
 
-function updateUIAfterTransaction() {
-  loadTransactions();
-  loadSoldProducts();
-  loadProducts();
-  loadCustomers();
-  getHoldOrders();
-  getCustomerOrders();
-  renderTable(cart);
-  
-  $(".loading").hide();
-  $("#dueModal").modal("hide");
-  $("#paymentModel").modal("hide");
-}
-
 
 
 $("#printReceipt").on("click", function () {
@@ -866,14 +852,16 @@ if (auth == undefined) {
           processData: false,
           success: function (response) {
               cart = []; // Clear cart after order submission
-  
+              $(this).renderTable(cart);
+              loadProducts();
+              loadSoldProducts();
+              loadTransactions();
               let receiptContent = generateBill(transactionData);
               $("#viewTransaction").html(receiptContent);
               $("#orderModal").modal("show");
-  
-              updateUIAfterTransaction(); // Refresh UI
-  
               $(".loading").hide();
+              $("#paymentModel").modal("hide");
+              $("#dueModal").modal("hide");
           },
           error: function () {
               $(".loading").hide();
@@ -2292,7 +2280,6 @@ function authenticate() {
 $("body").on("submit", "#account", function (e) {
   e.preventDefault();
   let formData = $(this).serializeObject();
-
   if (formData.username == "" || formData.password == "") {
     notiflix.Report.warning("Incomplete form!", auth_empty, "Ok");
   } else {
